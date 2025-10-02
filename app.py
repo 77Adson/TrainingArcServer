@@ -5,7 +5,7 @@ from bson.objectid import ObjectId
 app = Flask(__name__)
 
 # Połączenie z MongoDB (użyj swoich danych)
-client = MongoClient('mongodb://myFlaskAppUser:anotherStrongPassword@16.170.203.251:27017/test_database')
+client = MongoClient('mongodb://myFlaskAppUser:anotherStrongPassword@172.31.41.176:27017/test_database')
 db = client.test_database
 
 @app.route('/')

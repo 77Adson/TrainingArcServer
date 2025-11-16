@@ -20,7 +20,8 @@ def create_app(config_class=Config):
     jwt.init_app(app)
 
     # Rejestracja Blueprints
-    from app.main.routes import auth_bp, main_bp
+    from app.main.routes import main_bp
+    from app.auth.routes import auth_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
 

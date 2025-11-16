@@ -1,0 +1,7 @@
+from app import create_app
+
+app = create_app()
+
+if __name__ == '__main__':
+    # Użyj host='0.0.0.0' aby serwer był dostępny z zewnątrz
+    app.run(host='0.0.0.0', port=5000)

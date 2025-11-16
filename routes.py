@@ -3,8 +3,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from bson.objectid import ObjectId
 from bson.json_util import dumps
-from app import mongo
-from app.services import process_workout_log
+from __init__ import mongo
+from services import process_workout_log
 
 main_bp = Blueprint('main_bp', __name__)
 

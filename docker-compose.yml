@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: flask_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://FlaskUser:pakerapp1@172.31.41.176:27017/training_arc_db
+      - JWT_SECRET_KEY=twoj-super-sekretny-klucz-jwt # Pamiętaj, aby zmienić na bezpieczny klucz!

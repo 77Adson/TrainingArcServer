@@ -41,6 +41,31 @@ def get_users():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@main_bp.route("/user/update", methods=["POST", "PUT"])
+@jwt_required()
+def update_user():
+    """Ustawia preferencje użytkownika."""
+    user_id = get_jwt_identity()
+    data = request.json
+    username = data.get("username")
+    waga = data.get("aktualna_waga_kg")
+    preferences = data.get("preferences")
+
+    update_data = {}
+    if username:
+        update_data["username"] = username
+    if waga is not None:
+        update_data["aktualna_waga_kg"] = waga
+    if preferences:
+        update_data["preferences"] = preferences
+
+    if not update_data:
+        return jsonify({"message": "No data to update"}), 400
+
+    mongo.db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
+    
+    return jsonify({"message": "User updated successfully"}), 200
+
 @main_bp.route("/exercises", methods=["GET"])
 @jwt_required()
 def get_exercises():

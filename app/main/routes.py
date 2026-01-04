@@ -48,14 +48,14 @@ def update_user():
     user_id = get_jwt_identity()
     data = request.json
     username = data.get("username")
-    waga = data.get("aktualna_waga_kg")
+    weight = data.get("current_weight_kg")
     preferences = data.get("preferences")
 
     update_data = {}
     if username:
         update_data["username"] = username
-    if waga is not None:
-        update_data["aktualna_waga_kg"] = waga
+    if weight is not None:
+        update_data["current_weight_kg"] = weight
     if preferences:
         update_data["preferences"] = preferences
 
@@ -83,16 +83,16 @@ def add_exercise():
     
     mongo.db.exercises.insert_one({
         "userId": ObjectId(user_id),
-        "nazwa": data.get("nazwa"),
-        "typ_glowny": data.get("typ_glowny"),
-        "tagi": data.get("tagi", []),
-        "cel": data.get("cel"),
-        "aktualna_waga_kg": data.get("aktualna_waga_kg"),
-        "aktualne_tempo_stats": data.get("aktualne_tempo_stats"),
-        "technika_rating": data.get("technika_rating"),
-        "notatki": data.get("notatki"),
-        "linki": data.get("linki", []),
-        "zdjecia_paths": data.get("zdjecia_paths", [])
+        "name": data.get("name"),
+        "main_type": data.get("main_type"),
+        "tags": data.get("tags", []),
+        "goal": data.get("goal"),
+        "current_weight_kg": data.get("current_weight_kg"),
+        "current_tempo_stats": data.get("current_tempo_stats"),
+        "technique_rating": data.get("technique_rating"),
+        "notes": data.get("notes"),
+        "links": data.get("links", []),
+        "image_paths": data.get("image_paths", [])
     })
     
     return jsonify({"message": "Exercise added successfully"}), 201
@@ -120,7 +120,7 @@ def log_workout():
         return jsonify({"message": "exercise_id, log_type, and raw_data are required"}), 400
 
     user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
-    user_weight_kg = user.get("aktualna_waga_kg", 0)
+    user_weight_kg = user.get("current_weight_kg", 0)
 
     aggregates = process_workout_log(log_type, raw_data, user_weight_kg)
 

@@ -15,7 +15,7 @@ def home():
         'endpoints': [
             '/register',
             '/login',
-            '/users',
+            '/user',
             '/exercises',
             '/sessions',
             '/log_workout',
@@ -23,9 +23,9 @@ def home():
         ]
     })
 
-@main_bp.route('/users')
+@main_bp.route('/user')
 @jwt_required()
-def get_users():
+def get_user():
     """Pobiera dane JEDNEGO, zalogowanego użytkownika (nie wszystkich)."""
     try:
         user_id = get_jwt_identity()

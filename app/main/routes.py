@@ -48,14 +48,14 @@ def update_user():
     user_id = get_jwt_identity()
     data = request.json
     username = data.get("username")
-    weight = data.get("current_weight_kg")
+    weight = data.get("weight")
     preferences = data.get("preferences")
 
     update_data = {}
     if username:
         update_data["username"] = username
     if weight is not None:
-        update_data["current_weight_kg"] = weight
+        update_data["weight"] = weight
     if preferences:
         update_data["preferences"] = preferences
 
@@ -87,7 +87,7 @@ def add_exercise():
         "main_type": data.get("main_type"),
         "tags": data.get("tags", []),
         "goal": data.get("goal"),
-        "current_weight_kg": data.get("current_weight_kg"),
+        "weight": data.get("weight"),
         "current_tempo_stats": data.get("current_tempo_stats"),
         "technique_rating": data.get("technique_rating"),
         "notes": data.get("notes"),
@@ -120,9 +120,9 @@ def log_workout():
         return jsonify({"message": "exercise_id, log_type, and raw_data are required"}), 400
 
     user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
-    user_weight_kg = user.get("current_weight_kg", 0)
+    user_weight = user.get("weight", 0)
 
-    aggregates = process_workout_log(log_type, raw_data, user_weight_kg)
+    aggregates = process_workout_log(log_type, raw_data, user_weight)
 
     new_log_document = {
         "userId": ObjectId(user_id),

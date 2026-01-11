@@ -20,13 +20,16 @@ def register():
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     
-    mongo.db.users.insert_one({
+    result = mongo.db.users.insert_one({
         "email": email,
         "hashed_password": hashed_password,
         "created_at": datetime.datetime.now(datetime.timezone.utc)
     })
 
-    access_token = create_access_token(identity=str(mongo.db.users.find_one({"email": email})["_id"]))
+    user_id = str(result.inserted_id)
+    
+    access_token = create_access_token(identity=user_id)
+    
     return jsonify(access_token=access_token), 201
 
 @auth_bp.route("/login", methods=["POST"])

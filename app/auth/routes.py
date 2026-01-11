@@ -7,7 +7,7 @@ auth_bp = Blueprint('auth_bp', __name__)
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
-    """Rejestruje nowego użytkownika."""
+    """Rejestruje nowego użytkownika. i zwraca JWT token."""
     data = request.json
     email = data.get("email")
     password = data.get("password")
@@ -25,8 +25,9 @@ def register():
         "hashed_password": hashed_password,
         "created_at": datetime.datetime.now(datetime.timezone.utc)
     })
-    
-    return jsonify({"message": "User registered successfully"}), 201
+
+    access_token = create_access_token(identity=str(mongo.db.users.find_one({"email": email})["_id"]))
+    return jsonify(access_token=access_token), 201
 
 @auth_bp.route("/login", methods=["POST"])
 def login():

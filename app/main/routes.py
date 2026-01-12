@@ -71,8 +71,13 @@ def update_user():
 def get_exercises():
     """Pobiera wszystkie ćwiczenia dla zalogowanego użytkownika."""
     user_id = get_jwt_identity()
-    exercises = mongo.db.exercises.find({"userId": ObjectId(user_id)})
-    return jsonify(dumps(list(exercises))), 200
+    exercises = list(mongo.db.exercises.find({"userId": ObjectId(user_id)}))
+
+    for ex in exercises:
+        ex["_id"] = str(ex["_id"])
+        ex["userId"] = str(ex["userId"])
+
+    return jsonify(exercises), 200
 
 @main_bp.route("/exercises", methods=["POST"])
 @jwt_required()
@@ -102,8 +107,13 @@ def add_exercise():
 def get_sessions():
     """Pobiera wszystkie sesje (szablony) dla zalogowanego użytkownika."""
     user_id = get_jwt_identity()
-    sessions = mongo.db.sessions.find({"userId": ObjectId(user_id)})
-    return jsonify(dumps(list(sessions))), 200
+    sessions = list(mongo.db.sessions.find({"userId": ObjectId(user_id)}))
+
+    for s in sessions:
+        s["_id"] = str(s["_id"])
+        s["userId"] = str(s["userId"])
+
+    return jsonify(sessions), 200
 
 @main_bp.route("/log_workout", methods=["POST"])
 @jwt_required()

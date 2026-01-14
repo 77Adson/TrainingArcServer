@@ -16,14 +16,14 @@ def home():
             '/register',
             '/login',
             '/user',
-            '/exercises',
-            '/sessions',
+            '/user/exercises',
+            '/user/workouts',
             '/log_workout',
             '/stats/<exercise_id>'
         ]
     })
 
-@main_bp.route('/user')
+@main_bp.route('/user', methods=['GET'])
 @jwt_required()
 def get_user():
     """Pobiera dane JEDNEGO, zalogowanego użytkownika (nie wszystkich)."""
@@ -41,45 +41,45 @@ def get_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@main_bp.route("/user/update", methods=["POST", "PUT"])
+@main_bp.route("/user", methods=["PATCH"])
 @jwt_required()
 def update_user():
     """Ustawia preferencje użytkownika."""
     user_id = get_jwt_identity()
     data = request.json
-    username = data.get("username")
-    weight = data.get("weight")
-    preferences = data.get("preferences")
 
+    # Buduje słownik aktualizacji tylko z podanych pól
     update_data = {}
-    if username:
-        update_data["username"] = username
-    if weight is not None:
-        update_data["weight"] = weight
-    if preferences:
-        update_data["preferences"] = preferences
+    if "username" in data:
+        update_data["username"] = data["username"]
+    if "weight" in data:
+        update_data["weight"] = data["weight"]
+    if "preferences" in data:
+        update_data["preferences"] = data["preferences"]
 
     if not update_data:
         return jsonify({"message": "No data to update"}), 400
 
+    # Aktualizuje dane w bazie danych
     mongo.db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
     
     return jsonify({"message": "User updated successfully"}), 200
 
-@main_bp.route("/exercises", methods=["GET"])
+@main_bp.route("/user/exercises", methods=["GET"])
 @jwt_required()
 def get_exercises():
     """Pobiera wszystkie ćwiczenia dla zalogowanego użytkownika."""
     user_id = get_jwt_identity()
     exercises = list(mongo.db.exercises.find({"userId": ObjectId(user_id)}))
 
+    # Konwertuje ObjectId na stringi dla każdego ćwiczenia
     for ex in exercises:
         ex["_id"] = str(ex["_id"])
         ex["userId"] = str(ex["userId"])
 
     return jsonify(exercises), 200
 
-@main_bp.route("/exercises", methods=["POST"])
+@main_bp.route("/user/exercises", methods=["POST"])
 @jwt_required()
 def add_exercise():
     """Dodaje nowe ćwiczenie dla zalogowanego użytkownika."""
@@ -102,18 +102,18 @@ def add_exercise():
     
     return jsonify({"message": "Exercise added successfully"}), 201
 
-@main_bp.route("/sessions", methods=["GET"])
+@main_bp.route("/user/workouts", methods=["GET"])
 @jwt_required()
-def get_sessions():
-    """Pobiera wszystkie sesje (szablony) dla zalogowanego użytkownika."""
+def get_user_workouts():
+    """Pobiera wszystkie workouty użytkownika."""
     user_id = get_jwt_identity()
-    sessions = list(mongo.db.sessions.find({"userId": ObjectId(user_id)}))
+    workouts = list(mongo.db.workouts.find({"userId": ObjectId(user_id)}))
 
-    for s in sessions:
+    for s in workouts:
         s["_id"] = str(s["_id"])
         s["userId"] = str(s["userId"])
 
-    return jsonify(sessions), 200
+    return jsonify(workouts), 200
 
 @main_bp.route("/log_workout", methods=["POST"])
 @jwt_required()

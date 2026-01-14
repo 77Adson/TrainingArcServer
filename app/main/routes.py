@@ -79,28 +79,74 @@ def get_exercises():
 
     return jsonify(exercises), 200
 
-@main_bp.route("/user/exercises", methods=["POST"])
+@main_bp.route("/user/exercises", metheods=["POST"])
 @jwt_required()
-def add_exercise():
-    """Dodaje nowe ćwiczenie dla zalogowanego użytkownika."""
+def create_exercise():
+    """Tworzy nowe ćwiczenie. Tylko nazwa jest wymagana."""
     user_id = get_jwt_identity()
     data = request.json
+
+    if "name" not in data:
+        return jsonify({"message": "Exercise name is required"}), 400
     
-    mongo.db.exercises.insert_one({
+    new_exercise = {
         "userId": ObjectId(user_id),
-        "name": data.get("name"),
-        "main_type": data.get("main_type"),
-        "tags": data.get("tags", []),
-        "goal": data.get("goal"),
-        "weight": data.get("weight"),
-        "current_tempo_stats": data.get("current_tempo_stats"),
-        "technique_rating": data.get("technique_rating"),
-        "notes": data.get("notes"),
-        "links": data.get("links", []),
-        "image_paths": data.get("image_paths", [])
-    })
+        "name": data["name"],
+        "main_type": None,
+        "tags": [],
+        "goal": None,
+        "weight": None,
+        "current_tempo_stats": None,
+        "technique_rating": None,
+        "notes": None,
+        "links": [],
+        "image_paths": []
+    }
     
-    return jsonify({"message": "Exercise added successfully"}), 201
+    mongo.db.exercises.insert_one(new_exercise)
+    
+    return jsonify({"message": "Exercise created successfully"}), 201
+
+@main_bp.route("/user/exercises/<exercise_id>", methods=["PATCH"])
+@jwt_required()
+def update_exercise(exercise_id):
+    """Aktualizuje dane ćwiczenia."""
+    user_id = get_jwt_identity()
+    data = request.json
+
+    # Buduje słownik aktualizacji tylko z podanych pól
+    update_data = {}
+    if "name" in data:
+        update_data["name"] = data["name"]
+    if "main_type" in data:
+        update_data["main_type"] = data["main_type"]
+    if "tags" in data:
+        update_data["tags"] = data["tags"]
+    if "goal" in data:
+        update_data["goal"] = data["goal"]
+    if "weight" in data:
+        update_data["weight"] = data["weight"]
+    if "current_tempo_stats" in data:
+        update_data["current_tempo_stats"] = data["current_tempo_stats"]
+    if "technique_rating" in data:
+        update_data["technique_rating"] = data["technique_rating"]
+    if "notes" in data:
+        update_data["notes"] = data["notes"]
+    if "links" in data:
+        update_data["links"] = data["links"]
+    if "image_paths" in data:
+        update_data["image_paths"] = data["image_paths"]
+
+    if not update_data:
+        return jsonify({"message": "No fields to update"}), 400
+
+    # Aktualizuje dane w bazie danych
+    mongo.db.exercises.update_one(
+        {"_id": ObjectId(exercise_id), "userId": ObjectId(user_id)},
+        {"$set": update_data}
+    )
+
+    return jsonify({"message": "Exercise updated successfully"}), 200
 
 @main_bp.route("/user/workouts", methods=["GET"])
 @jwt_required()

@@ -105,7 +105,10 @@ def create_exercise():
     
     mongo.db.exercises.insert_one(new_exercise)
     
-    return jsonify({"message": "Exercise created successfully"}), 201
+    return jsonify({
+        "message": "Exercise created successfully",
+        "exercise_id": str(new_exercise["_id"])
+                    }), 201
 
 @main_bp.route("/user/exercises/<exercise_id>", methods=["PATCH"])
 @jwt_required()

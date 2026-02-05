@@ -26,7 +26,7 @@ def home():
 @main_bp.route('/user', methods=['GET'])
 @jwt_required()
 def get_user():
-    """Pobiera dane JEDNEGO, zalogowanego użytkownika (nie wszystkich)."""
+    """Pobiera dane JEDNEGO, zalogowanego użytkownika."""
     try:
         user_id = get_jwt_identity()
         user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
@@ -34,11 +34,20 @@ def get_user():
         if not user:
             return jsonify({'error': 'User not found'}), 404
             
+        # 1. Convert ObjectId to string
         user['_id'] = str(user['_id'])
-        user.pop('hashed_password', None) 
+        
+        # 2. Remove sensitive data
+        user.pop('hashed_password', None)
+        
+        # 3. SAFETY FIX: Convert datetime to string manually
+        if 'created_at' in user:
+            user['created_at'] = user['created_at'].isoformat()
         
         return jsonify(user)
     except Exception as e:
+        # This print helps you see the REAL error in your server console
+        print(f"Error in get_user: {e}") 
         return jsonify({'error': str(e)}), 500
 
 @main_bp.route("/user", methods=["PATCH"])

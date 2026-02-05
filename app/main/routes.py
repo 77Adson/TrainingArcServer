@@ -262,15 +262,28 @@ def get_stats(exercise_id):
     """Pobiera dane do wykresów (tylko agregaty)."""
     user_id = get_jwt_identity()
     
-    stats = mongo.db.workoutLogs.find(
+    # Fetch the data as a standard list
+    # Note: "_id": 0 is already in your projection, so we don't need to convert ObjectId!
+    logs = list(mongo.db.workoutLogs.find(
         {
             "userId": ObjectId(user_id),
             "exercise_id": ObjectId(exercise_id)
         },
         {
-            "_id": 0, "data": 1, "aggr_total_volume": 1, "aggr_best_e1RM": 1,
-            "aggr_total_distance_km": 1, "aggr_total_time_sec": 1
+            "_id": 0, 
+            "data": 1, 
+            "aggr_total_volume": 1, 
+            "aggr_best_e1RM": 1,
+            "aggr_total_distance_km": 1, 
+            "aggr_total_time_sec": 1
         }
-    ).sort("data", 1)
+    ).sort("data", 1))
     
-    return jsonify(dumps(list(stats))), 200
+    # Manual serialization for DateTime objects
+    for log in logs:
+        if "data" in log and log["data"]:
+            # Convert datetime to ISO 8601 string (e.g., "2023-10-27T10:00:00")
+            log["data"] = log["data"].isoformat()
+
+    # Pass the raw list to jsonify, which will create a proper JSON Array
+    return jsonify(logs), 200

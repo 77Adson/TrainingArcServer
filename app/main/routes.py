@@ -110,8 +110,6 @@ def create_exercise():
         "exercise_id": str(new_exercise["_id"])
                     }), 201
 
-# app/main/routes.py
-
 @main_bp.route("/user/exercises/<exercise_id>", methods=["PATCH"])
 @jwt_required()
 def update_exercise(exercise_id):
@@ -149,15 +147,81 @@ def update_exercise(exercise_id):
 @main_bp.route("/user/workouts", methods=["GET"])
 @jwt_required()
 def get_user_workouts():
-    """Pobiera wszystkie workouty użytkownika."""
+    """Pobiera zdefiniowane plany treningowe użytkownika."""
     user_id = get_jwt_identity()
+    # Fetch from the 'workouts' collection (Routines), NOT 'workoutLogs' (History)
     workouts = list(mongo.db.workouts.find({"userId": ObjectId(user_id)}))
 
-    for s in workouts:
-        s["_id"] = str(s["_id"])
-        s["userId"] = str(s["userId"])
+    output = []
+    for w in workouts:
+        # Safely convert data for the client
+        plan = {
+            "_id": str(w["_id"]),
+            "name": w.get("name", "Unnamed Plan"),
+            # Convert list of ObjectIds to strings if they exist
+            "exercise_ids": [str(eid) for eid in w.get("exercise_ids", [])]
+        }
+        output.append(plan)
 
-    return jsonify(workouts), 200
+    return jsonify(output), 200
+
+@main_bp.route("/user/workouts", methods=["POST"])
+@jwt_required()
+def create_workout_plan():
+    """Tworzy nowy plan treningowy (np. 'Push Day')."""
+    user_id = get_jwt_identity()
+    data = request.json
+
+    if "name" not in data:
+        return jsonify({"message": "Workout plan name is required"}), 400
+    
+    new_workout = {
+        "userId": ObjectId(user_id),
+        "name": data["name"],
+        "exercise_ids": [], 
+        "created_at": datetime.datetime.now(datetime.timezone.utc),
+        "description": ""
+    }
+    
+    result = mongo.db.workouts.insert_one(new_workout)
+    
+    return jsonify({
+        "message": "Workout plan created successfully",
+        "workout_id": str(result.inserted_id)
+    }), 201
+
+@main_bp.route("/user/workouts/<workout_id>", methods=["PATCH"])
+@jwt_required()
+def update_workout_plan(workout_id):
+    user_id = get_jwt_identity()
+    data = request.json
+    
+    if not data:
+        return jsonify({"message": "No data to update"}), 400
+
+    update_data = {}
+    if "name" in data:
+        update_data["name"] = data["name"]
+    if "description" in data:
+        update_data["description"] = data["description"]
+    if "exercise_ids" in data:
+        try:
+            update_data["exercise_ids"] = [ObjectId(eid) for eid in data["exercise_ids"]]
+        except Exception:
+             return jsonify({"message": "Invalid exercise ID format"}), 400
+
+    if not update_data:
+        return jsonify({"message": "No valid fields provided"}), 400
+
+    result = mongo.db.workouts.update_one(
+        {"_id": ObjectId(workout_id), "userId": ObjectId(user_id)},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        return jsonify({"message": "Workout plan not found or unauthorized"}), 404
+        
+    return jsonify({"message": "Workout plan updated successfully"}), 200
 
 @main_bp.route("/log_workout", methods=["POST"])
 @jwt_required()

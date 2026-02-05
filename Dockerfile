@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 5000
 
 # Command to run the application.
-CMD ["gunicorn", "--workers", "4", "--bind", "0.0.0.0:5000", "run:app"]
+CMD ["gunicorn", "--workers", "4", "--bind", "0.0.0.0:5000", "--keep-alive", "30", "run:app"]

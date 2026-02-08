@@ -3,7 +3,7 @@ services:
     build: .
     container_name: flask_backend
     restart: always
-    command: gunicorn --workers 4 --bind 0.0.0.0:5000 --keep-alive 65 run:app
+    command: gunicorn --workers 4 --threads 2 --bind 0.0.0.0:5000 --keep-alive 65 run:app
     ports:
       - "5000:5000"
     environment:

@@ -119,6 +119,37 @@ def create_exercise():
         "exercise_id": str(new_exercise["_id"])
                     }), 201
 
+@main_bp.route("/user/exercises/<exercise_id>", methods=["GET"])
+@jwt_required()
+def get_exercise_details(exercise_id):
+    user_id = get_jwt_identity()
+    
+    # Fetch the exercise document
+    exercise = mongo.db.exercises.find_one({
+        "_id": ObjectId(exercise_id), 
+        "userId": ObjectId(user_id)
+    })
+    
+    if not exercise:
+        return jsonify({"message": "Exercise not found"}), 404
+        
+    # Serialize ObjectId
+    exercise["_id"] = str(exercise["_id"])
+    exercise["userId"] = str(exercise["userId"])
+    
+    # Ensure all fields exist for the frontend
+    defaults = {
+        "main_type": "Unspecified",
+        "notes": "",
+        "tags": [],
+        "goal": ""
+    }
+    for key, value in defaults.items():
+        if key not in exercise or exercise[key] is None:
+            exercise[key] = value
+
+    return jsonify(exercise), 200
+
 @main_bp.route("/user/exercises/<exercise_id>", methods=["PATCH"])
 @jwt_required()
 def update_exercise(exercise_id):
@@ -158,20 +189,18 @@ def update_exercise(exercise_id):
 def get_user_workouts():
     """Pobiera zdefiniowane plany treningowe użytkownika."""
     user_id = get_jwt_identity()
-    # Fetch from the 'workouts' collection (Routines), NOT 'workoutLogs' (History)
     workouts = list(mongo.db.workouts.find({"userId": ObjectId(user_id)}))
-
     output = []
+
     for w in workouts:
         # Safely convert data for the client
-        plan = {
+        output.append({
             "_id": str(w["_id"]),
             "name": w.get("name", "Unnamed Plan"),
+            "description": w.get("description", ""),
             # Convert list of ObjectIds to strings if they exist
             "exercise_ids": [str(eid) for eid in w.get("exercise_ids", [])]
-        }
-        output.append(plan)
-
+        })
     return jsonify(output), 200
 
 @main_bp.route("/user/workouts", methods=["POST"])
@@ -265,34 +294,56 @@ def log_workout():
     
     return jsonify({"message": "Workout log saved successfully"}), 201
 
-@main_bp.route("/stats/<exercise_id>", methods=["GET"])
+@main_bp.route("/user/exercises/<exercise_id>/details", methods=["GET"])
 @jwt_required()
-def get_stats(exercise_id):
-    """Pobiera dane do wykresów (tylko agregaty)."""
+def get_exercise_details(exercise_id):
     user_id = get_jwt_identity()
     
-    # Fetch the data as a standard list
-    # Note: "_id": 0 is already in your projection, so we don't need to convert ObjectId!
+    # 1. Fetch the Exercise Metadata (Name, Goal, Notes, etc.)
+    exercise = mongo.db.exercises.find_one({
+        "_id": ObjectId(exercise_id), 
+        "userId": ObjectId(user_id)
+    })
+    
+    if not exercise:
+        return jsonify({"message": "Exercise not found"}), 404
+
+    # Clean up ObjectId
+    exercise["_id"] = str(exercise["_id"])
+    exercise["userId"] = str(exercise["userId"])
+
+    # 2. Fetch the History (Logs)
+    logs = list(mongo.db.workoutLogs.find(
+        {"userId": ObjectId(user_id), "exercise_id": ObjectId(exercise_id)},
+        {"_id": 0, "data": 1, "aggr_total_volume": 1, "aggr_best_e1RM": 1}
+    ).sort("data", 1))
+    
+    for log in logs:
+        if "data" in log and log["data"]:
+            log["data"] = log["data"].isoformat()
+
+    # 3. Return Combined Data
+    return jsonify({
+        "details": exercise,
+        "history": logs
+    }), 200
+    user_id = get_jwt_identity()
+    # ... (logic remains the same, just the route changed) ...
     logs = list(mongo.db.workoutLogs.find(
         {
             "userId": ObjectId(user_id),
             "exercise_id": ObjectId(exercise_id)
         },
         {
-            "_id": 0, 
-            "data": 1, 
-            "aggr_total_volume": 1, 
-            "aggr_best_e1RM": 1,
-            "aggr_total_distance_km": 1, 
-            "aggr_total_time_sec": 1
+            "_id": 0,
+            "data": 1,
+            "aggr_total_volume": 1,
+            "aggr_best_e1RM": 1
         }
     ).sort("data", 1))
     
-    # Manual serialization for DateTime objects
     for log in logs:
         if "data" in log and log["data"]:
-            # Convert datetime to ISO 8601 string (e.g., "2023-10-27T10:00:00")
             log["data"] = log["data"].isoformat()
 
-    # Pass the raw list to jsonify, which will create a proper JSON Array
     return jsonify(logs), 200

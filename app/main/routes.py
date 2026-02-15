@@ -294,9 +294,6 @@ def log_workout():
     
     return jsonify({"message": "Workout log saved successfully"}), 201
 
-@main_bp.route("/user/exercises/<exercise_id>/details", methods=["GET"])
-@jwt_required()
-def get_exercise_details(exercise_id):
     user_id = get_jwt_identity()
     
     # 1. Fetch the Exercise Metadata (Name, Goal, Notes, etc.)

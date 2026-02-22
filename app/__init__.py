@@ -22,7 +22,16 @@ def create_app(config_class=Config):
     # Rejestracja Blueprints
     from app.main.routes import main_bp
     from app.auth.routes import auth_bp
+    from app.main.api.user_routes import user_bp
+    from app.main.api.exercise_routes import exercise_bp
+    from app.main.api.workout_routes import workout_bp
+    from app.main.api.workout_log_routes import workout_log_bp
+    
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(user_bp)
+    app.register_blueprint(exercise_bp)
+    app.register_blueprint(workout_bp)
+    app.register_blueprint(workout_log_bp)
 
     return app

@@ -38,9 +38,12 @@ def create_workout_plan():
     new_workout = {
         "userId": ObjectId(user_id),
         "name": data["name"],
-        "exercise_ids": [], 
-        "created_at": datetime.datetime.now(datetime.timezone.utc),
-        "description": ""
+        "description": "",
+        "days_of_week": {"Monday": False, "Tuesday": False, "Wednesday": False, "Thursday": False,
+                         "Friday": False, "Saturday": False, "Sunday": False},
+        "average_duration": 0,
+        "exercise_groups": [],
+        "created_at": datetime.datetime.now(datetime.timezone.utc)
     }
     
     result = mongo.db.workouts.insert_one(new_workout)
@@ -64,11 +67,10 @@ def update_workout_plan(workout_id):
         update_data["name"] = data["name"]
     if "description" in data:
         update_data["description"] = data["description"]
-    if "exercise_ids" in data:
-        try:
-            update_data["exercise_ids"] = [ObjectId(eid) for eid in data["exercise_ids"]]
-        except Exception:
-             return jsonify({"message": "Invalid exercise ID format"}), 400
+    if "days_of_week" in data:
+        update_data["days_of_week"] = data["days_of_week"]
+    if "exercise_groups" in data:
+        update_data["exercise_groups"] = data["exercise_groups"]
 
     if not update_data:
         return jsonify({"message": "No valid fields provided"}), 400

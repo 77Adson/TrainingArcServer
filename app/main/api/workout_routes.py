@@ -15,13 +15,20 @@ def get_user_workouts():
     output = []
 
     for w in workouts:
-        # Safely convert data for the client
         output.append({
             "_id": str(w["_id"]),
             "name": w.get("name", "Unnamed Plan"),
             "description": w.get("description", ""),
-            # Convert list of ObjectIds to strings if they exist
-            "exercise_ids": [str(eid) for eid in w.get("exercise_ids", [])]
+            "exercise_groups": w.get("exercise_groups", []),
+            "days_of_week": w.get("days_of_week", {
+                "Monday": False, "Tuesday": False, "Wednesday": False, 
+                "Thursday": False, "Friday": False, "Saturday": False, "Sunday": False
+            }),
+            "average_time_sec": w.get("average_time_sec", 0),
+            
+            # Keep this temporarily just in case old app versions expect it, 
+            # though the new app uses exercise_groups exclusively.
+            "exercise_ids": [str(eid) for eid in w.get("exercise_ids", [])] 
         })
     return jsonify(output), 200
 

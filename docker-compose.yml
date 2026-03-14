@@ -1,11 +1,33 @@
+version: '3.8'
+
 services:
-  backend:
+  # --------------------------------------------------------
+  # KONTENER 1: BAZA DANYCH (Odpowiednik instancji DB na AWS)
+  # --------------------------------------------------------
+  mongodb:
+    image: mongo:latest
+    container_name: trainingarc_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db  # Bardzo ważne: to zapobiega utracie danych po restarcie kontenera!
+
+  # --------------------------------------------------------
+  # KONTENER 2: SERWER FLASK (Odpowiednik instancji Server na AWS)
+  # --------------------------------------------------------
+  web:
     build: .
-    container_name: flask_backend
-    restart: always
-    command: gunicorn --workers 4 --threads 2 --bind 0.0.0.0:5000 --keep-alive 65 run:app
+    container_name: trainingarc_server
     ports:
       - "5000:5000"
+    depends_on:
+      - mongodb  # Mówi Dockerowi, żeby najpierw odpalił bazę, a potem serwer
     environment:
-      - MONGO_URI=mongodb://FlaskUser:pakerapp1@172.31.41.176:27017/training_arc_db
-      - JWT_SECRET_KEY=twoj-super-sekretny-klucz-jwt # Pamiętaj, aby zmienić na bezpieczny klucz!
+      # Wskazujemy serwerowi, jak ma się łączyć z bazą. 
+      # Zwróć uwagę, że używamy nazwy serwisu 'mongodb' zamiast adresu IP!
+      - MONGO_URI=mongodb://mongodb:27017/trainingarc
+      - JWT_SECRET_KEY=twoj_tymczasowy_lokalny_klucz_jwt
+
+# Deklaracja wolumenu do przetrzymywania danych bazy
+volumes:
+  mongo_data:

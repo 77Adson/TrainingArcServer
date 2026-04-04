@@ -24,12 +24,12 @@ def create_app(config_class=Config):
     from app.main.api.user_routes import user_bp
     from app.main.api.exercise_routes import exercise_bp
     from app.main.api.workout_routes import workout_bp
-    from app.main.api.workout_log_routes import workout_log_bp
+    from app.main.api.exercise_log_routes import exercise_log_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(exercise_bp)
     app.register_blueprint(workout_bp)
-    app.register_blueprint(workout_log_bp)
+    app.register_blueprint(exercise_log_bp)
 
     return app

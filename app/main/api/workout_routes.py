@@ -91,3 +91,37 @@ def update_workout_plan(workout_id):
         return jsonify({"message": "Workout plan not found or unauthorized"}), 404
         
     return jsonify({"message": "Workout plan updated successfully"}), 200
+
+@workout_bp.route("/user/workouts/<workout_id>/finish", methods=["POST"])
+@jwt_required()
+def finish_workout(workout_id):
+    """Marks the session complete, updates average duration, and processes XP."""
+    user_id = get_jwt_identity()
+    data = request.json
+    duration_sec = data.get("duration_sec", 0)
+
+    workout = mongo.db.workouts.find_one({"_id": ObjectId(workout_id), "userId": ObjectId(user_id)})
+    if not workout:
+        return jsonify({"message": "Workout not found"}), 404
+
+    # Calculate new moving average
+    current_avg = workout.get("average_time_sec", 0)
+    sessions_count = workout.get("sessions_completed", 0) # Track how many times it was done
+
+    new_count = sessions_count + 1
+    if current_avg == 0:
+        new_avg = duration_sec
+    else:
+        new_avg = int(((current_avg * sessions_count) + duration_sec) / new_count)
+
+    mongo.db.workouts.update_one(
+        {"_id": ObjectId(workout_id)},
+        {"$set": {
+            "average_time_sec": new_avg, 
+            "sessions_completed": new_count
+        }}
+    )
+
+    # Note: Gamification/Streak XP logic will be injected here later
+
+    return jsonify({"message": "Workout finished", "new_average_time": new_avg}), 200

@@ -57,3 +57,61 @@ def log_exercise():
     )
     
     return jsonify({"message": "Exercise log saved successfully"}), 201
+
+@exercise_log_bp.route("/user/exercises/<exercise_id>/stats", methods=["GET"])
+@jwt_required()
+def get_exercise_stats(exercise_id):
+    """
+    Pobiera historię logów dla danego ćwiczenia, agregując dane dziennie.
+    Zwraca płaską listę punktów gotowych do narysowania na wykresie.
+    """
+    user_id = get_jwt_identity()
+    
+    # Pobierz wszystkie logi dla tego ćwiczenia posortowane chronologicznie
+    logs = mongo.db.exercise_logs.find(
+        {
+            "userId": ObjectId(user_id), 
+            "exercise_id": ObjectId(exercise_id)
+        }
+    ).sort("date", 1)
+
+    stats_by_date = {}
+
+    for log in logs:
+        if "date" not in log:
+            continue
+            
+        date_str = log["date"].strftime("%Y-%m-%d")
+        
+        vol = log.get("aggr_total_volume", 0)
+        e1rm = log.get("aggr_best_e1RM", 0)
+        
+        # Bezpieczne pobranie najwyższego ciężaru
+        raw_sets = log.get("raw_sets", [])
+        max_weight = max([s.get("weight", 0) for s in raw_sets] + [0])
+
+        if date_str not in stats_by_date:
+            stats_by_date[date_str] = {
+                "volume": vol,
+                "e1rm": e1rm,
+                "max_weight": max_weight,
+                "average_rest_sec": log.get("aggr_average_rest_sec", 0)
+            }
+        else:
+            stats_by_date[date_str]["volume"] += vol
+            stats_by_date[date_str]["e1rm"] = max(stats_by_date[date_str]["e1rm"], e1rm)
+            stats_by_date[date_str]["max_weight"] = max(stats_by_date[date_str]["max_weight"], max_weight)
+            # Średni czas odpoczynku nadpisujemy ostatnią wartością lub uśredniamy
+            stats_by_date[date_str]["average_rest_sec"] = log.get("aggr_average_rest_sec", 0)
+
+    output = []
+    for date_key, values in stats_by_date.items():
+        output.append({
+            "date": date_key,
+            "volume": values["volume"],
+            "e1rm": values["e1rm"],
+            "max_weight": values["max_weight"],
+            "average_rest_sec": values["average_rest_sec"]
+        })
+
+    return jsonify(output), 200

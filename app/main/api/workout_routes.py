@@ -1,4 +1,5 @@
 import datetime
+from app.services import calculate_rpg_gains
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from bson.objectid import ObjectId
@@ -99,6 +100,7 @@ def finish_workout(workout_id):
     user_id = get_jwt_identity()
     data = request.json
     duration_sec = data.get("duration_sec", 0)
+    session_id = data.get("session_id") # NEW
 
     workout = mongo.db.workouts.find_one({"_id": ObjectId(workout_id), "userId": ObjectId(user_id)})
     if not workout:
@@ -122,6 +124,13 @@ def finish_workout(workout_id):
         }}
     )
 
-    # Note: Gamification/Streak XP logic will be injected here later
+    # RPG Engine Processing
+    rpg_results = calculate_rpg_gains(user_id, session_id, duration_sec)
 
-    return jsonify({"message": "Workout finished", "new_average_time": new_avg}), 200
+    return jsonify({
+        "message": "Workout finished",
+        "user_xp_gained": rpg_results.get("user_xp_gained", 0),
+        "user_leveled_up": rpg_results.get("user_leveled_up", False),
+        "user_new_level": rpg_results.get("user_new_level", 1),
+        "exercises_leveled_up": rpg_results.get("exercises_leveled_up", [])
+    }), 200

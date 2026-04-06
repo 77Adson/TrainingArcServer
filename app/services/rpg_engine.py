@@ -1,6 +1,7 @@
 from app import mongo
 from bson.objectid import ObjectId
 from . import rpg_math
+from . import achievements
 
 def calculate_rpg_gains(user_id_str, session_id, duration_sec):
     user = mongo.db.users.find_one({"_id": ObjectId(user_id_str)})
@@ -11,6 +12,8 @@ def calculate_rpg_gains(user_id_str, session_id, duration_sec):
     # Base User XP
     user_xp_gained = 50 + int((duration_sec / 60) * 2)
     exercise_level_ups = []
+
+    user_stat_gains = {"strength": 0, "stamina": 0, "dexterity": 0, "endurance": 0}
 
     for log in session_logs:
         exercise_id = log.get("exercise_id")
@@ -63,20 +66,41 @@ def calculate_rpg_gains(user_id_str, session_id, duration_sec):
                 {"_id": ObjectId(exercise_id)},
                 {"$set": {"stats": current_stats}}
             )
+        if log_type == "compound": user_stat_gains["strength"] += 1
+        elif log_type == "isolation": user_stat_gains["stamina"] += 1
+        elif log_type == "bodyweight": user_stat_gains["dexterity"] += 1
+        elif log_type == "running": user_stat_gains["endurance"] += 1
 
-    # 4. User Leveling
+    # Apply User Leveling
     new_u_lvl, new_u_xp, u_leveled_up = rpg_math.evaluate_level_progression(
         user.get("level", 1), user.get("total_xp", 0), user_xp_gained, xp_per_level_multiplier=1000
     )
 
+    # --- Apply User Stats & Evaluate Achievements ---
+    current_user_stats = user.get("stats", {"strength": 10, "stamina": 10, "dexterity": 10, "endurance": 10, "consistency": 10})
+    for k, v in user_stat_gains.items():
+        current_user_stats[k] = current_user_stats.get(k, 10) + v
+
+    new_achievement_ids = achievements.evaluate_user_achievements(user, new_u_lvl, current_user_stats)
+    readable_achievements = achievements.get_display_names(new_achievement_ids)
+
+    # Update User DB Document (Using $push with $each to append to array)
     mongo.db.users.update_one(
         {"_id": ObjectId(user_id_str)},
-        {"$set": {"level": new_u_lvl, "total_xp": new_u_xp}}
+        {
+            "$set": {
+                "level": new_u_lvl, 
+                "total_xp": new_u_xp,
+                "stats": current_user_stats
+            },
+            "$push": {"achievements": {"$each": new_achievement_ids}}
+        }
     )
 
     return {
         "user_xp_gained": user_xp_gained,
         "user_leveled_up": u_leveled_up,
         "user_new_level": new_u_lvl,
-        "exercise_level_ups": exercise_level_ups
+        "exercise_level_ups": exercise_level_ups,
+        "achievements_unlocked": readable_achievements
     }

@@ -55,3 +55,20 @@ def update_user():
     mongo.db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
     
     return jsonify({"message": "User updated successfully"}), 200
+
+
+@user_bp.route('/achievements', methods=['GET'])
+@jwt_required()
+def get_all_achievements():
+    """Zwraca główną listę wszystkich dostępnych osiągnięć w grze z bazy danych."""
+    achievements_cursor = mongo.db.achievements.find()
+    
+    achievements_list = []
+    for ach in achievements_cursor:
+        achievements_list.append({
+            "id": ach["_id"],
+            "name": ach["name"],
+            "description": ach["description"]
+        })
+        
+    return jsonify(achievements_list), 200

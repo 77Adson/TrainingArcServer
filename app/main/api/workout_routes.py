@@ -132,5 +132,6 @@ def finish_workout(workout_id):
         "user_xp_gained": rpg_results.get("user_xp_gained", 0),
         "user_leveled_up": rpg_results.get("user_leveled_up", False),
         "user_new_level": rpg_results.get("user_new_level", 1),
-        "exercises_leveled_up": rpg_results.get("exercises_leveled_up", [])
+        "exercises_leveled_up": rpg_results.get("exercise_level_ups", []),
+        "achievements_unlocked": rpg_results.get("achievements_unlocked", [])
     }), 200

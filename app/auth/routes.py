@@ -23,7 +23,19 @@ def register():
     result = mongo.db.users.insert_one({
         "email": email,
         "hashed_password": hashed_password,
-        "created_at": datetime.datetime.now(datetime.timezone.utc)
+        "created_at": datetime.datetime.now(datetime.timezone.utc),
+        
+        # --- SPRINT 3: RPG STATE INITIALIZATION ---
+        "level": 1,
+        "total_xp": 0,
+        "achievements": [],
+        "stats": {
+            "strength": 10,
+            "stamina": 10,
+            "dexterity": 10,
+            "endurance": 10,
+            "consistency": 10
+        }
     })
 
     user_id = str(result.inserted_id)

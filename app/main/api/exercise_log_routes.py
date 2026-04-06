@@ -15,7 +15,7 @@ def log_exercise():
 
     exercise_id = data.get("exercise_id")
     session_id = data.get("session_id") # NEW
-    log_type = data.get("log_type", "freeweight") 
+    log_type = data.get("log_type", "compound") # NEW: "compound", "isolation", "bodyweight", "cardio"
     raw_data = data.get("raw_data")
     client_date_str = data.get("date") 
     

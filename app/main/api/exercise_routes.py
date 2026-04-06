@@ -40,7 +40,15 @@ def create_exercise():
         "technique_rating": None,
         "notes": None,
         "links": [],
-        "image_paths": []
+        "image_paths": [],
+        
+        # --- SPRINT 3: RPG EXERCISE STATS ---
+        "mastery_level": 1,
+        "exercise_stats": {
+            "strength": 0.0,
+            "stamina": 0.0,
+            "momentum": 0.0
+        }
     }
     
     mongo.db.exercises.insert_one(new_exercise)
@@ -48,7 +56,7 @@ def create_exercise():
     return jsonify({
         "message": "Exercise created successfully",
         "exercise_id": str(new_exercise["_id"])
-                    }), 201
+    }), 201
 
 @exercise_bp.route("/user/exercises/<exercise_id>", methods=["GET"])
 @jwt_required()

@@ -102,5 +102,6 @@ def calculate_rpg_gains(user_id_str, session_id, duration_sec):
         "user_leveled_up": u_leveled_up,
         "user_new_level": new_u_lvl,
         "exercise_level_ups": exercise_level_ups,
-        "achievements_unlocked": readable_achievements
+        "achievements_unlocked": readable_achievements,
+        "user_stat_gains": user_stat_gains
     }

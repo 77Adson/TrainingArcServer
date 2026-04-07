@@ -136,3 +136,24 @@ def finish_workout(workout_id):
         "achievements_unlocked": rpg_results.get("achievements_unlocked", []),
         "user_stat_gains": rpg_results.get("user_stat_gains", {})
     }), 200
+
+@workout_bp.route("/user/workouts/<workout_id>/summary", methods=["GET"])
+@jwt_required()
+def get_workout_summary(workout_id):
+    """Returns a lightweight summary of a single workout plan (used for spontaneous active sessions)."""
+    user_id = get_jwt_identity()
+    w = mongo.db.workouts.find_one({"_id": ObjectId(workout_id), "userId": ObjectId(user_id)})
+
+    if not w:
+        return jsonify({"message": "Workout not found"}), 404
+
+    # Calculate total exercises from the groups
+    total_exercises = sum([len(g.get("exercise_ids", [])) for g in w.get("exercise_groups", [])])
+
+    return jsonify({
+        "_id": str(w["_id"]),
+        "name": w.get("name", "Unnamed Plan"),
+        "description": w.get("description", ""),
+        "average_time_sec": w.get("average_time_sec", 0),
+        "total_exercises": total_exercises
+    }), 200

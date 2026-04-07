@@ -25,7 +25,9 @@ def build_weekly_schedule(mongo, user_id):
     return schedule, unique_scheduled_days
 
 def calculate_streak_and_progress(mongo, user_id, target_days):
-    """Calculates the current streak and workouts completed this week."""
+    import datetime
+    from bson.objectid import ObjectId
+
     today = datetime.datetime.now(datetime.timezone.utc).date()
     start_of_week = today - datetime.timedelta(days=today.weekday())
 
@@ -46,11 +48,15 @@ def calculate_streak_and_progress(mongo, user_id, target_days):
             idx += 1
 
     workouts_this_week = sum(1 for d in workout_dates if d >= start_of_week)
+    
+    # NEW: Did they log anything today?
+    worked_out_today = bool(workout_dates and workout_dates[0] == today)
 
     return {
         "streak": streak,
         "this_week_completed": workouts_this_week,
-        "this_week_target": target_days if target_days > 0 else 1
+        "this_week_target": target_days if target_days > 0 else 1,
+        "worked_out_today": worked_out_today # ADD THIS TO THE RETURN DICT
     }
 
 def get_recent_achievements(mongo, user):

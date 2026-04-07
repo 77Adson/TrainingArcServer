@@ -26,6 +26,7 @@ def create_app(config_class=Config):
     from app.main.api.workout_routes import workout_bp
     from app.main.api.exercise_log_routes import exercise_log_bp
     from app.main.api.dashboard_routes import dashboard_bp
+    from app.main.api.social_routes import social_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
@@ -33,5 +34,6 @@ def create_app(config_class=Config):
     app.register_blueprint(workout_bp)
     app.register_blueprint(exercise_log_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(social_bp)
 
     return app

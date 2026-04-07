@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from bson.objectid import ObjectId
 from app import mongo
+from app.services.social_service import clone_workout_blueprint
 
 workout_bp = Blueprint('workout_bp', __name__)
 
@@ -157,3 +158,23 @@ def get_workout_summary(workout_id):
         "average_time_sec": w.get("average_time_sec", 0),
         "total_exercises": total_exercises
     }), 200
+
+@workout_bp.route("/user/workouts/<workout_id>/clone", methods=["POST"])
+@jwt_required()
+def clone_workout(workout_id):
+    """Clones a friend's workout into the user's local library."""
+    requester_id = get_jwt_identity()
+    
+    # Optional: Add a check here to ensure requester is actually friends 
+    # with the owner of workout_id before allowing the clone.
+
+    new_id = clone_workout_blueprint(workout_id, requester_id)
+    
+    if not new_id:
+        return jsonify({"message": "Failed to clone workout"}), 404
+        
+    return jsonify({
+        "message": "Workout and exercises cloned successfully",
+        "new_workout_id": new_id
+    }), 201
+

@@ -79,3 +79,57 @@ def get_friends():
         f["_id"] = str(f["_id"])
 
     return jsonify(friends_data), 200
+
+@social_bp.route("/friends/<friend_id>/profile", methods=["GET"])
+@jwt_required()
+def get_friend_profile(friend_id):
+    """Returns full RPG stats and achievements for a training partner."""
+    my_id = get_jwt_identity()
+    
+    # 1. Verify Friendship
+    friendship = mongo.db.friendships.find_one({
+        "$or": [
+            {"user1": ObjectId(my_id), "user2": ObjectId(friend_id)},
+            {"user1": ObjectId(friend_id), "user2": ObjectId(my_id)}
+        ]
+    })
+    if not friendship:
+        return jsonify({"message": "Unauthorized"}), 403
+
+    # 2. Fetch sanitied User data
+    user = mongo.db.users.find_one(
+        {"_id": ObjectId(friend_id)},
+        {"username": 1, "level": 1, "total_xp": 1, "stats": 1, "achievements": 1}
+    )
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    user["_id"] = str(user["_id"])
+    return jsonify(user), 200
+
+@social_bp.route("/friends/<friend_id>/workouts", methods=["GET"])
+@jwt_required()
+def get_friend_workouts(friend_id):
+    """Returns a list of sanitized blueprints owned by the friend."""
+    my_id = get_jwt_identity()
+    
+    # Verify Friendship
+    friendship = mongo.db.friendships.find_one({
+        "$or": [
+            {"user1": ObjectId(my_id), "user2": ObjectId(friend_id)},
+            {"user1": ObjectId(friend_id), "user2": ObjectId(my_id)}
+        ]
+    })
+    if not friendship:
+        return jsonify({"message": "Unauthorized"}), 403
+
+    # Fetch blueprints (sanitized for list view)
+    workouts = list(mongo.db.workouts.find({"userId": ObjectId(friend_id)}))
+    output = []
+    for w in workouts:
+        output.append({
+            "_id": str(w["_id"]),
+            "name": w.get("name", "Unnamed Plan"),
+            "average_time_sec": w.get("average_time_sec", 0) # FIXED JSON KEY
+        })
+    return jsonify(output), 200

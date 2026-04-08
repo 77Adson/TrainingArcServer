@@ -101,3 +101,15 @@ def process_workout_log(log_type, raw_data, user_weight_kg):
         aggregates["aggr_total_time_sec"] = raw_data.get("time_sec", 0)
         
     return aggregates
+
+def extract_workout_blueprint(workout_doc):
+    """
+    Shared helper to extract the common 'Blueprint' structure 
+    used by both owners and friends.
+    """
+    return {
+        "_id": str(workout_doc["_id"]),
+        "name": workout_doc.get("name", "Unnamed Plan"),
+        "average_time_sec": workout_doc.get("average_time_sec", 0),
+        "exercise_groups": workout_doc.get("exercise_groups", [])
+    }

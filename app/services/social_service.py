@@ -37,7 +37,7 @@ def clone_workout_blueprint(source_workout_id, requester_id_str):
                     }
                 }
                 new_ex_id = exercise_repo.create_exercise(new_ex_doc)
-                new_ids.append(str(new_ex_id))
+                new_ids.append(str(new_ex_id.inserted_id))
         
         new_exercise_groups.append({
             "name": group["name"],
@@ -56,4 +56,4 @@ def clone_workout_blueprint(source_workout_id, requester_id_str):
     }
     
     final_workout_id = workout_repo.create_workout(new_workout)
-    return str(final_workout_id)
+    return str(final_workout_id.inserted_id)

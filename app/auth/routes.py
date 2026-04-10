@@ -41,7 +41,7 @@ def register():
 
     user_id = user_repo.create_user(new_user_doc)
     
-    access_token = create_access_token(identity=str(user_id))
+    access_token = create_access_token(identity=str(user_id.inserted_id))
     
     return jsonify(access_token=access_token), 201
 

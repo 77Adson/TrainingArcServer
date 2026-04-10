@@ -126,7 +126,7 @@ def finish_workout(workout_id):
     
     new_avg = duration_sec if current_avg == 0 else int(((current_avg * sessions_count) + duration_sec) / new_count)
 
-    workout_repo.update_workout(workout_id, {
+    workout_repo.update_workout_fields(workout_id, user_id, {
         "average_time_sec": new_avg, 
         "sessions_completed": new_count
     })
@@ -155,7 +155,7 @@ def create_workout_plan():
         "created_at": datetime.datetime.now(datetime.timezone.utc)
     }
     workout_id_str = workout_repo.create_workout(new_workout)
-    return jsonify({"message": "Workout plan created", "workout_id": str(workout_id_str)}), 201
+    return jsonify({"message": "Workout plan created", "workout_id": str(workout_id_str.inserted_id)}), 201
 
 @workout_bp.route("/user/workouts/<workout_id>", methods=["PATCH"])
 @jwt_required()

@@ -1,4 +1,5 @@
 import datetime
+from genericpath import exists
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
 from app.repositories import user_repo, social_repo, workout_repo
@@ -40,7 +41,16 @@ def accept_invite():
         exists = social_repo.get_friendship(my_id, friend_id)
 
         if not exists:
-            social_repo.create_friendship(my_id, friend_id)
+            # FIX: Construct the document with ObjectIds before passing to the repo
+            from bson.objectid import ObjectId
+            import datetime
+            
+            friendship_doc = {
+                "user1": ObjectId(my_id),
+                "user2": ObjectId(friend_id),
+                "created_at": datetime.datetime.now(datetime.timezone.utc)
+            }
+            social_repo.create_friendship(friendship_doc)
 
         return jsonify({"message": "Friendship established!"}), 201
     except Exception as e:

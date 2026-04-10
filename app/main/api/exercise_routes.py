@@ -66,7 +66,14 @@ def get_exercise_details(exercise_id):
     exercise["_id"] = str(exercise["_id"])
     exercise["userId"] = str(exercise["userId"])
     
-    defaults = {"main_type": "Unspecified", "notes": "", "tags": [], "goal": ""}
+    defaults = {
+            "main_type": "Unspecified", 
+            "notes": "", 
+            "tags": [], 
+            "goal": "",
+            "links": [],
+            "image_paths": []
+        }
     for key, value in defaults.items():
         if key not in exercise or exercise[key] is None:
             exercise[key] = value

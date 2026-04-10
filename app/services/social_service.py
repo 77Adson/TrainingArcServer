@@ -27,6 +27,8 @@ def clone_workout_blueprint(source_workout_id, requester_id_str):
                     "goal": old_ex.get("goal"),
                     "notes": old_ex.get("notes"),
                     "tags": old_ex.get("tags", []),
+                    "links": old_ex.get("links", []),
+                    "image_paths": old_ex.get("image_paths", []),
                     # RESET RPG STATS
                     "mastery_level": 1,
                     "stats": {

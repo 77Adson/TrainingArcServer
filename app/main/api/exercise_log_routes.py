@@ -81,7 +81,9 @@ def get_exercise_stats(exercise_id):
                 "volume": vol,
                 "e1rm": e1rm,
                 "max_weight": max_weight,
-                "average_rest_sec": log.get("aggr_average_rest_sec", 0)
+                "average_rest_sec": log.get("aggr_average_rest_sec", 0),
+                "distance_km": log.get("aggr_total_distance_km", 0),
+                "time_sec": log.get("aggr_total_time_sec", 0) 
             }
         else:
             stats_by_date[date_str]["volume"] += vol

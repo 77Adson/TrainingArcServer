@@ -62,7 +62,7 @@ def get_friends():
     """Returns a list of friends with basic RPG stats."""
     my_id = get_jwt_identity()
     
-    friendships = social_repo.get_friendships_for_user(my_id)
+    friendships = social_repo.get_all_friendships(my_id)
 
     friend_ids = []
     for f in friendships:

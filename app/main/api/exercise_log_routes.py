@@ -87,8 +87,9 @@ def get_exercise_stats(exercise_id):
             stats_by_date[date_str]["volume"] += vol
             stats_by_date[date_str]["e1rm"] = max(stats_by_date[date_str]["e1rm"], e1rm)
             stats_by_date[date_str]["max_weight"] = max(stats_by_date[date_str]["max_weight"], max_weight)
-            # Średni czas odpoczynku nadpisujemy ostatnią wartością lub uśredniamy
             stats_by_date[date_str]["average_rest_sec"] = log.get("aggr_average_rest_sec", 0)
+            stats_by_date[date_str]["distance_km"] += log.get("aggr_total_distance_km", 0)
+            stats_by_date[date_str]["time_sec"] += log.get("aggr_total_time_sec", 0)
 
     output = []
     for date_key, values in stats_by_date.items():
@@ -97,7 +98,9 @@ def get_exercise_stats(exercise_id):
             "volume": values["volume"],
             "e1rm": values["e1rm"],
             "max_weight": values["max_weight"],
-            "average_rest_sec": values["average_rest_sec"]
+            "average_rest_sec": values["average_rest_sec"],
+            "distance_km": values["distance_km"],
+            "time_sec": values["time_sec"]
         })
 
     return jsonify(output), 200

@@ -2,7 +2,7 @@ import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from bson.objectid import ObjectId
-from app import mongo
+from app.repositories import workout_repo, social_repo
 
 # Correct service imports to avoid NameErrors
 from app.services.social_service import clone_workout_blueprint
@@ -20,10 +20,10 @@ def get_user_workouts():
     """
     user_id = get_jwt_identity()
     # Only fetch necessary fields for the list view to reduce DB load
-    workouts = list(mongo.db.workouts.find(
-        {"userId": ObjectId(user_id)}, 
-        {"name": 1, "days_of_week": 1, "exercise_groups": 1}
-    ))
+    workouts = workout_repo.get_workouts_by_user(
+        user_id, 
+        projection={"name": 1, "days_of_week": 1, "exercise_groups": 1}
+    )
     
     output = []
     for w in workouts:
@@ -46,7 +46,7 @@ def get_my_workout_detail(workout_id):
     and scheduling data for editing or starting a session.
     """
     user_id = get_jwt_identity()
-    w = mongo.db.workouts.find_one({"_id": ObjectId(workout_id), "userId": ObjectId(user_id)})
+    w = workout_repo.get_workout_by_id(workout_id, user_id)
     
     if not w:
         return jsonify({"message": "Workout not found"}), 404
@@ -69,7 +69,7 @@ def get_friend_workout_blueprint(workout_id):
     Strips out personal notes and schedules.
     """
     my_id = get_jwt_identity()
-    w = mongo.db.workouts.find_one({"_id": ObjectId(workout_id)})
+    w = workout_repo.get_workout_by_id(workout_id)
     
     if not w:
         return jsonify({"message": "Workout not found"}), 404
@@ -77,12 +77,7 @@ def get_friend_workout_blueprint(workout_id):
     owner_id = w["userId"]
 
     # Verify bidirectional friendship before showing any data
-    friendship = mongo.db.friendships.find_one({
-        "$or": [
-            {"user1": ObjectId(my_id), "user2": ObjectId(owner_id)},
-            {"user1": ObjectId(owner_id), "user2": ObjectId(my_id)}
-        ]
-    })
+    friendship = social_repo.get_friendship(my_id, str(owner_id))
 
     if not friendship:
         return jsonify({"message": "You are not rivals with this user"}), 403
@@ -120,7 +115,7 @@ def finish_workout(workout_id):
     duration_sec = data.get("duration_sec", 0)
     session_id = data.get("session_id")
 
-    workout = mongo.db.workouts.find_one({"_id": ObjectId(workout_id), "userId": ObjectId(user_id)})
+    workout = workout_repo.get_workout_by_id(workout_id, user_id)
     if not workout:
         return jsonify({"message": "Workout not found"}), 404
 
@@ -131,10 +126,10 @@ def finish_workout(workout_id):
     
     new_avg = duration_sec if current_avg == 0 else int(((current_avg * sessions_count) + duration_sec) / new_count)
 
-    mongo.db.workouts.update_one(
-        {"_id": ObjectId(workout_id)},
-        {"$set": {"average_time_sec": new_avg, "sessions_completed": new_count}}
-    )
+    workout_repo.update_workout(workout_id, {
+        "average_time_sec": new_avg, 
+        "sessions_completed": new_count
+    })
 
     # Process XP, Level Ups, and Achievements
     rpg_results = calculate_rpg_gains(user_id, session_id, duration_sec)
@@ -159,8 +154,8 @@ def create_workout_plan():
         "exercise_groups": [],
         "created_at": datetime.datetime.now(datetime.timezone.utc)
     }
-    result = mongo.db.workouts.insert_one(new_workout)
-    return jsonify({"message": "Workout plan created", "workout_id": str(result.inserted_id)}), 201
+    workout_id_str = workout_repo.create_workout(new_workout)
+    return jsonify({"message": "Workout plan created", "workout_id": str(workout_id_str)}), 201
 
 @workout_bp.route("/user/workouts/<workout_id>", methods=["PATCH"])
 @jwt_required()
@@ -173,8 +168,6 @@ def update_workout_plan(workout_id):
     if not update_data:
         return jsonify({"message": "No valid fields provided"}), 400
 
-    result = mongo.db.workouts.update_one(
-        {"_id": ObjectId(workout_id), "userId": ObjectId(user_id)},
-        {"$set": update_data}
-    )
+    workout_repo.update_workout_fields(workout_id, user_id, update_data)
+    
     return jsonify({"message": "Workout updated"}), 200

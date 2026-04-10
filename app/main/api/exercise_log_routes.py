@@ -1,8 +1,7 @@
 import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from bson.objectid import ObjectId
-from app import mongo
+from app.repositories import log_repo, user_repo
 from app.services import process_workout_log
 
 exercise_log_bp = Blueprint('exercise_log_bp', __name__)
@@ -22,7 +21,7 @@ def log_exercise():
     if not exercise_id or not raw_data or not session_id:
         return jsonify({"message": "exercise_id, session_id, and raw_data are required"}), 400
 
-    user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+    user = user_repo.get_user_by_id(user_id)
     user_weight = user.get("weight", 0) if user else 0
 
     # Aggregates calculates based on the FULL array passed from the frontend
@@ -46,15 +45,7 @@ def log_exercise():
     }
     
     # THE UPSERT MAGIC
-    mongo.db.exercise_logs.update_one(
-        {
-            "userId": ObjectId(user_id),
-            "exercise_id": ObjectId(exercise_id),
-            "session_id": session_id # Group by session and exercise
-        },
-        {"$set": update_doc},
-        upsert=True # If it doesn't exist, create it. If it does, overwrite it.
-    )
+    log_repo.upsert_exercise_log(user_id, exercise_id, session_id, update_doc)
     
     return jsonify({"message": "Exercise log saved successfully"}), 201
 
@@ -68,12 +59,7 @@ def get_exercise_stats(exercise_id):
     user_id = get_jwt_identity()
     
     # Pobierz wszystkie logi dla tego ćwiczenia posortowane chronologicznie
-    logs = mongo.db.exercise_logs.find(
-        {
-            "userId": ObjectId(user_id), 
-            "exercise_id": ObjectId(exercise_id)
-        }
-    ).sort("date", 1)
+    logs = log_repo.get_logs_for_exercise(user_id, exercise_id)
 
     stats_by_date = {}
 

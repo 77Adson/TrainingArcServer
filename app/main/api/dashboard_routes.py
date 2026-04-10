@@ -1,33 +1,25 @@
-import datetime
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from bson.objectid import ObjectId
-from app import mongo
+from app.repositories import user_repo
 from app.services.dashboard_service import build_weekly_schedule, calculate_streak_and_progress, get_recent_achievements
+import datetime
 
 dashboard_bp = Blueprint('dashboard_bp', __name__)
 
 @dashboard_bp.route('/user/dashboard', methods=['GET'])
 @jwt_required()
 def get_dashboard():
-    """Aggregates all data required for the Home Screen Dashboard."""
     try:
         user_id = get_jwt_identity()
-        user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+        user = user_repo.get_user_by_id(user_id)
         
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # 1. Schedule
-        schedule, target_days = build_weekly_schedule(mongo, user_id)
+        schedule, target_days = build_weekly_schedule(user_id)
+        stats = calculate_streak_and_progress(user_id, target_days)
+        recent_achievements = get_recent_achievements(user)
 
-        # 2. Stats & Streak
-        stats = calculate_streak_and_progress(mongo, user_id, target_days)
-
-        # 3. Recent Achievements
-        recent_achievements = get_recent_achievements(mongo, user)
-
-        # 4. Today's Workout
         today_name = datetime.datetime.now(datetime.timezone.utc).strftime("%A")
         today_workout = schedule.get(today_name)
 

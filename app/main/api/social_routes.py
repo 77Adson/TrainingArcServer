@@ -1,8 +1,7 @@
 import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
-from bson.objectid import ObjectId
-from app import mongo
+from app.repositories import user_repo, social_repo, workout_repo
 
 social_bp = Blueprint('social_bp', __name__)
 
@@ -38,19 +37,10 @@ def accept_invite():
             return jsonify({"message": "You cannot be your own rival"}), 400
 
         # Check if already friends
-        exists = mongo.db.friendships.find_one({
-            "$or": [
-                {"user1": ObjectId(my_id), "user2": ObjectId(friend_id)},
-                {"user1": ObjectId(friend_id), "user2": ObjectId(my_id)}
-            ]
-        })
+        exists = social_repo.get_friendship(my_id, friend_id)
 
         if not exists:
-            mongo.db.friendships.insert_one({
-                "user1": ObjectId(my_id),
-                "user2": ObjectId(friend_id),
-                "created_at": datetime.datetime.now(datetime.timezone.utc)
-            })
+            social_repo.create_friendship(my_id, friend_id)
 
         return jsonify({"message": "Friendship established!"}), 201
     except Exception as e:
@@ -62,17 +52,17 @@ def get_friends():
     """Returns a list of friends with basic RPG stats."""
     my_id = get_jwt_identity()
     
-    friendships = list(mongo.db.friendships.find({
-        "$or": [{"user1": ObjectId(my_id)}, {"user2": ObjectId(my_id)}]
-    }))
+    friendships = social_repo.get_friendships_for_user(my_id)
 
     friend_ids = []
     for f in friendships:
-        friend_ids.append(f["user2"] if str(f["user1"]) == my_id else f["user1"])
+        f1_str = str(f["user1"])
+        f2_str = str(f["user2"])
+        friend_ids.append(f2_str if f1_str == my_id else f1_str)
 
-    friends_data = list(mongo.db.users.find(
-        {"_id": {"$in": friend_ids}},
-        {"username": 1, "level": 1, "total_xp": 1, "stats": 1}
+    friends_data = list(user_repo.get_users_by_ids(
+        friend_ids,
+        projection={"username": 1, "level": 1, "total_xp": 1, "stats": 1}
     ))
 
     for f in friends_data:
@@ -87,19 +77,14 @@ def get_friend_profile(friend_id):
     my_id = get_jwt_identity()
     
     # 1. Verify Friendship
-    friendship = mongo.db.friendships.find_one({
-        "$or": [
-            {"user1": ObjectId(my_id), "user2": ObjectId(friend_id)},
-            {"user1": ObjectId(friend_id), "user2": ObjectId(my_id)}
-        ]
-    })
+    friendship = social_repo.get_friendship(my_id, friend_id)
     if not friendship:
         return jsonify({"message": "Unauthorized"}), 403
 
     # 2. Fetch sanitied User data
-    user = mongo.db.users.find_one(
-        {"_id": ObjectId(friend_id)},
-        {"username": 1, "level": 1, "total_xp": 1, "stats": 1, "achievements": 1}
+    user = user_repo.get_user_by_id(
+        friend_id,
+        projection={"username": 1, "level": 1, "total_xp": 1, "stats": 1, "achievements": 1}
     )
     if not user:
         return jsonify({"message": "User not found"}), 404
@@ -114,17 +99,12 @@ def get_friend_workouts(friend_id):
     my_id = get_jwt_identity()
     
     # Verify Friendship
-    friendship = mongo.db.friendships.find_one({
-        "$or": [
-            {"user1": ObjectId(my_id), "user2": ObjectId(friend_id)},
-            {"user1": ObjectId(friend_id), "user2": ObjectId(my_id)}
-        ]
-    })
+    friendship = social_repo.get_friendship(my_id, friend_id)
     if not friendship:
         return jsonify({"message": "Unauthorized"}), 403
 
     # Fetch blueprints (sanitized for list view)
-    workouts = list(mongo.db.workouts.find({"userId": ObjectId(friend_id)}))
+    workouts = workout_repo.get_workouts_by_user(friend_id)
     output = []
     for w in workouts:
         output.append({

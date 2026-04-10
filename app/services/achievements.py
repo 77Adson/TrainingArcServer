@@ -1,4 +1,4 @@
-from app import mongo
+from app.repositories import achievement_repo
 
 def evaluate_user_achievements(user_doc, new_level, new_stats):
     """
@@ -18,7 +18,7 @@ def evaluate_user_achievements(user_doc, new_level, new_stats):
 
     # 2. Dynamic LoL Rank Stat Checks
     # Fetch all achievements that have a "stat_requirement" field
-    stat_achievements = mongo.db.achievements.find({"stat_requirement": {"$exists": True}})
+    stat_achievements = achievement_repo.get_achievements_with_stat_requirements()
     
     for ach in stat_achievements:
         req = ach["stat_requirement"]
@@ -37,5 +37,5 @@ def get_display_names(achievement_ids):
         return []
         
     # Query the database for all achievements matching the unlocked IDs
-    docs = mongo.db.achievements.find({"_id": {"$in": achievement_ids}})
+    docs = achievement_repo.get_achievements_by_ids(achievement_ids)
     return [doc["name"] for doc in docs]

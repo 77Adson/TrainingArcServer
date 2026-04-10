@@ -1,7 +1,8 @@
 import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
-from app import mongo, bcrypt
+from app import bcrypt
+from app.repositories import user_repo
 
 auth_bp = Blueprint('auth_bp', __name__)
 
@@ -15,12 +16,12 @@ def register():
     if not email or not password:
         return jsonify({"message": "Email and password are required"}), 400
 
-    if mongo.db.users.find_one({"email": email}):
+    if user_repo.get_user_by_email(email):
         return jsonify({"message": "Email already registered"}), 409
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     
-    result = mongo.db.users.insert_one({
+    new_user_doc = {
         "email": email,
         "hashed_password": hashed_password,
         "created_at": datetime.datetime.now(datetime.timezone.utc),
@@ -36,11 +37,11 @@ def register():
             "endurance": 10,
             "consistency": 10
         }
-    })
+    }
 
-    user_id = str(result.inserted_id)
+    user_id = user_repo.create_user(new_user_doc)
     
-    access_token = create_access_token(identity=user_id)
+    access_token = create_access_token(identity=str(user_id))
     
     return jsonify(access_token=access_token), 201
 
@@ -51,11 +52,10 @@ def login():
     email = data.get("email")
     password = data.get("password")
 
-    user = mongo.db.users.find_one({"email": email})
+    user = user_repo.get_user_by_email(email)
 
     if user and bcrypt.check_password_hash(user["hashed_password"], password):
         access_token = create_access_token(identity=str(user["_id"]))
         return jsonify(access_token=access_token), 200
     
     return jsonify({"message": "Invalid email or password"}), 401
-

@@ -1,12 +1,12 @@
 from bson.objectid import ObjectId
-from app import mongo
+from app.repositories import workout_repo, exercise_repo
 
 def clone_workout_blueprint(source_workout_id, requester_id_str):
     """
     Recursively copies exercises and recreates the workout container.
     """
     # 1. Fetch original workout
-    original = mongo.db.workouts.find_one({"_id": ObjectId(source_workout_id)})
+    original = workout_repo.get_workout_by_id(source_workout_id)
     if not original:
         return None
 
@@ -17,7 +17,7 @@ def clone_workout_blueprint(source_workout_id, requester_id_str):
         new_ids = []
         for ex_id in group.get("exercise_ids", []):
             # Fetch original exercise
-            old_ex = mongo.db.exercises.find_one({"_id": ObjectId(ex_id)})
+            old_ex = exercise_repo.get_exercise_by_id(ex_id)
             if old_ex:
                 # Prepare a clean copy for the new user
                 new_ex_doc = {
@@ -36,8 +36,8 @@ def clone_workout_blueprint(source_workout_id, requester_id_str):
                         "momentum": {"level": 1, "xp": 0}
                     }
                 }
-                res = mongo.db.exercises.insert_one(new_ex_doc)
-                new_ids.append(str(res.inserted_id))
+                new_ex_id = exercise_repo.create_exercise(new_ex_doc)
+                new_ids.append(str(new_ex_id))
         
         new_exercise_groups.append({
             "name": group["name"],
@@ -55,5 +55,5 @@ def clone_workout_blueprint(source_workout_id, requester_id_str):
         "sessions_completed": 0
     }
     
-    final_res = mongo.db.workouts.insert_one(new_workout)
-    return str(final_res.inserted_id)
+    final_workout_id = workout_repo.create_workout(new_workout)
+    return str(final_workout_id)

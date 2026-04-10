@@ -89,7 +89,7 @@ def calculate_exercise_xp_gains(log, log_type, past_logs, technique_multiplier):
 
     # 4. Momentum: The Composite Delta Scale
     if not past_logs:
-        gains["momentum"] = int(50 * technique_multiplier) # Discovery Bonus
+        gains["momentum"] = int(100 * technique_multiplier) # Discovery Bonus
     else:
         composite_delta = calculate_momentum_score(log, log_type, past_logs, technique_multiplier)
         
@@ -97,10 +97,10 @@ def calculate_exercise_xp_gains(log, log_type, past_logs, technique_multiplier):
             # Positive momentum scales up your XP!
             # e.g., 10% overall improvement -> 0.10 * 10 = 1.0 multiplier -> 50 XP
             capped_delta = min(composite_delta * 10, 2.0)
-            gains["momentum"] = int((50 * capped_delta) * technique_multiplier)
+            gains["momentum"] = int((100 * capped_delta) * technique_multiplier)
         else:
             # Negative momentum: You had a bad day, but you still get a tiny trickle of XP for the effort.
-            gains["momentum"] = int(10 * technique_multiplier)
+            gains["momentum"] = int(25 * technique_multiplier)
 
     return gains
 

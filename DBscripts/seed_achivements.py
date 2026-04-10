@@ -27,16 +27,15 @@ def seed_achievements():
     # ==========================================
     # Defines the tier and the required stat level to reach it
     lol_ranks = [
-        ("Iron", 15),
-        ("Bronze", 30),
+        ("Iron", 10),
+        ("Bronze", 25),
         ("Silver", 50),
         ("Gold", 75),
         ("Platinum", 100),
         ("Emerald", 150),
         ("Diamond", 200),
-        ("Master", 300),
-        ("Grandmaster", 400),
-        ("Challenger", 500)
+        ("Master", 250),
+        ("Grandmaster", 300)
     ]
 
     stats = ["Strength", "Stamina", "Dexterity", "Endurance", "Consistency"]

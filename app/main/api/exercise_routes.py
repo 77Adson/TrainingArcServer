@@ -103,3 +103,14 @@ def update_exercise(exercise_id):
         return jsonify({"message": "Exercise not found or unauthorized"}), 404
         
     return jsonify({"message": "Exercise updated successfully"}), 200
+
+@exercise_bp.route("/user/exercises/<exercise_id>", methods=["DELETE"])
+@jwt_required()
+def delete_exercise(exercise_id):
+    user_id = get_jwt_identity()
+    result = exercise_repo.delete_exercise(exercise_id, user_id)
+    
+    if result.deleted_count == 0:
+        return jsonify({"message": "Exercise not found or unauthorized"}), 404
+        
+    return jsonify({"message": "Exercise deleted successfully"}), 200

@@ -21,3 +21,9 @@ def update_exercise(exercise_id_str, user_id_str, update_data):
 
 def update_exercise_advanced(exercise_id_str, update_doc):
     return mongo.db.exercises.update_one({"_id": ObjectId(exercise_id_str)}, update_doc)
+
+def delete_exercise(exercise_id_str, user_id_str):
+    return mongo.db.exercises.delete_one({
+        "_id": ObjectId(exercise_id_str),
+        "userId": ObjectId(user_id_str)
+    })

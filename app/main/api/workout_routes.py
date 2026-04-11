@@ -171,3 +171,14 @@ def update_workout_plan(workout_id):
     workout_repo.update_workout_fields(workout_id, user_id, update_data)
     
     return jsonify({"message": "Workout updated"}), 200
+
+@workout_bp.route("/user/workouts/<workout_id>", methods=["DELETE"])
+@jwt_required()
+def delete_workout_plan(workout_id):
+    user_id = get_jwt_identity()
+    result = workout_repo.delete_workout(workout_id, user_id)
+    
+    if result.deleted_count == 0:
+        return jsonify({"message": "Workout not found or unauthorized"}), 404
+        
+    return jsonify({"message": "Workout deleted successfully"}), 200

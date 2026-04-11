@@ -21,3 +21,9 @@ def update_workout_fields(workout_id_str, user_id_str, update_data):
 
 def update_workout_advanced(workout_id_str, update_doc):
     return mongo.db.workouts.update_one({"_id": ObjectId(workout_id_str)}, update_doc)
+
+def delete_workout(workout_id_str, user_id_str):
+    return mongo.db.workouts.delete_one({
+        "_id": ObjectId(workout_id_str), 
+        "userId": ObjectId(user_id_str)
+    })

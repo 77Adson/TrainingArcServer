@@ -1,11 +1,9 @@
 import requests
 import uuid
-import json
+import datetime
 
 # Test Funkcjonalny dla TrainingArc Server
-
-# ADRES TWOJEGO SERWERA (Zmień jeśli testujesz lokalnie lub na VPS)
-BASE_URL = "http://192.168.0.108:5000"
+BASE_URL = "http://127.0.0.1:5000" # Zmień na swój adres IP / localhost
 
 def print_pass(message):
     print(f"✅ PASS: {message}")
@@ -25,86 +23,75 @@ def run_test():
 
     print(f"--- Rozpoczynanie testu dla: {email} ---")
 
-    # 1. REJESTRACJA
-    payload = {"email": email, "password": password}
-    r = session.post(f"{BASE_URL}/register", json=payload)
-    if r.status_code == 201:
-        print_pass("Rejestracja")
-        # Token jest już tutaj zwracany, ale przetestujmy też login
-    else:
-        print_fail("Rejestracja", r)
-
-    # 2. LOGIN
-    r = session.post(f"{BASE_URL}/login", json=payload)
+    # 1. REJESTRACJA & LOGIN
+    session.post(f"{BASE_URL}/register", json={"email": email, "password": password})
+    r = session.post(f"{BASE_URL}/login", json={"email": email, "password": password})
     if r.status_code == 200:
         token = r.json().get("access_token")
         headers = {"Authorization": f"Bearer {token}"}
-        print_pass("Logowanie")
+        print_pass("Rejestracja i Logowanie")
     else:
         print_fail("Logowanie", r)
 
-    # 3. AKTUALIZACJA PROFILU (PATCH)
-    payload = {"username": f"Tester_{unique_id}", "weight": 80.5}
-    r = session.patch(f"{BASE_URL}/user", headers=headers, json=payload)
-    if r.status_code == 200:
-        print_pass("Aktualizacja profilu (PATCH)")
-    else:
-        print_fail("Aktualizacja profilu", r)
-
-    # 4. TWORZENIE ĆWICZENIA (POST)
-    payload = {"name": "Test Bench Press"}
-    r = session.post(f"{BASE_URL}/user/exercises", headers=headers, json=payload)
+    # 2. TWORZENIE ĆWICZENIA
+    r = session.post(f"{BASE_URL}/user/exercises", headers=headers, json={"name": "Test Bench Press"})
     if r.status_code == 201:
         exercise_id = r.json().get("exercise_id")
         print_pass(f"Utworzono ćwiczenie (ID: {exercise_id})")
     else:
         print_fail("Tworzenie ćwiczenia", r)
 
-    # 5. AKTUALIZACJA ĆWICZENIA (PATCH) - Ustawienie typu i celu
-    payload = {
-        "main_type": "freeweight",
-        "notes": "Testowe notatki",
+    # 3. AKTUALIZACJA ĆWICZENIA
+    session.patch(f"{BASE_URL}/user/exercises/{exercise_id}", headers=headers, json={
+        "main_type": "compound",
         "goal": "4x10 100kg"
-    }
-    r = session.patch(f"{BASE_URL}/user/exercises/{exercise_id}", headers=headers, json=payload)
-    if r.status_code == 200:
-        print_pass("Edycja ćwiczenia (PATCH)")
-    else:
-        print_fail("Edycja ćwiczenia", r)
+    })
 
-    # 6. POBRANIE LISTY ĆWICZEŃ
-    r = session.get(f"{BASE_URL}/user/exercises", headers=headers)
-    exercises = r.json()
-    if r.status_code == 200 and len(exercises) > 0:
-        print_pass(f"Pobrano listę ćwiczeń (Znaleziono: {len(exercises)})")
+    # 4. TWORZENIE PLANU TRENINGOWEGO
+    r = session.post(f"{BASE_URL}/user/workouts", headers=headers, json={"name": "Testowy Plan"})
+    if r.status_code == 201:
+        workout_id = r.json().get("workout_id")
+        print_pass(f"Utworzono plan treningowy (ID: {workout_id})")
     else:
-        print_fail("Pobieranie ćwiczeń", r)
+        print_fail("Tworzenie planu", r)
 
-    # 7. LOGOWANIE TRENINGU (Smart Aggregation)
+    # 5. LOGOWANIE TRENINGU (Poprawiony format czasu i wagi)
+    session_id = str(uuid.uuid4())
+    base_time = datetime.datetime.now(datetime.timezone.utc)
+    
+    # Sztuczne opóźnienia, aby backend mógł poprawnie wyliczyć "average_rest_sec"
+    time_set_1 = (base_time + datetime.timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    time_set_2 = (base_time + datetime.timedelta(minutes=4)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    date_str = base_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
     payload = {
         "exercise_id": exercise_id,
-        "log_type": "freeweight",
+        "session_id": session_id,
+        "date": date_str,
+        "log_type": "compound",
         "raw_data": {
             "raw_sets": [
-                {"reps": 10, "weight": 100},
-                {"reps": 8,  "weight": 105}
+                {"set_number": 1, "reps": 10, "weight": 100.0, "completed_at": time_set_1, "technique_rating": 4},
+                {"set_number": 2, "reps": 8,  "weight": 105.0, "completed_at": time_set_2, "technique_rating": 3}
             ]
         }
     }
-    r = session.post(f"{BASE_URL}/log_workout", headers=headers, json=payload)
+    r = session.post(f"{BASE_URL}/log_exercise", headers=headers, json=payload)
     if r.status_code == 201:
-        print_pass("Zalogowano trening")
+        print_pass("Zalogowano ćwiczenie (log_exercise)")
     else:
-        print_fail("Logowanie treningu", r)
+        print_fail("Logowanie ćwiczenia", r)
 
-    # 8. SPRAWDZENIE STATYSTYK
-    r = session.get(f"{BASE_URL}/stats/{exercise_id}", headers=headers)
+    # 6. ZAKOŃCZENIE SESJI (Wyzwalacz RPG)
+    r = session.post(f"{BASE_URL}/user/workouts/{workout_id}/finish", headers=headers, json={
+        "duration_sec": 3600,
+        "session_id": session_id
+    })
     if r.status_code == 200:
-        stats = r.json() # To wraca jako string JSON w obecnym kodzie backendu
-        print_pass("Pobrano statystyki")
-        print(f"   🔍 Dane statystyk: {stats}")
+        rpg_data = r.json()
+        print_pass(f"Zakończono sesję. Zdobyto XP: {rpg_data.get('user_xp_gained')}")
     else:
-        print_fail("Pobieranie statystyk", r)
+        print_fail("Kończenie sesji", r)
 
     print("\n--- TEST ZAKOŃCZONY SUKCESEM ---")
 

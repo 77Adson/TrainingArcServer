@@ -5,3 +5,4 @@ architecture.md
 .venv/
 __pycache__/
 instance/
+.env/

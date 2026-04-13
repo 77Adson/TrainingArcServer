@@ -20,7 +20,6 @@ services:
       - .env
     environment:
       - MONGO_URI=mongodb://mongodb:27017/trainingarc
-      - JWT_SECRET_KEY=twoj_tymczasowy_lokalny_klucz_jwt
 
 # Deklaracja wolumenu do przetrzymywania danych bazy
 volumes:

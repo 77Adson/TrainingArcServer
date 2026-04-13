@@ -5,8 +5,7 @@ import json
 # Test Funkcjonalny dla TrainingArc Server
 
 # ADRES TWOJEGO SERWERA (Zmień jeśli testujesz lokalnie lub na VPS)
-BASE_URL = "http://13.61.174.167:5000" 
-# Lub jeśli używasz Docker/VPS: "http://16.171.165.180:5000"
+BASE_URL = "http://192.168.0.108:5000"
 
 def print_pass(message):
     print(f"✅ PASS: {message}")

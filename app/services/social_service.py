@@ -24,12 +24,18 @@ def clone_workout_blueprint(source_workout_id, requester_id_str):
                     "userId": ObjectId(requester_id_str),
                     "name": old_ex["name"],
                     "main_type": old_ex.get("main_type"),
-                    "goal": old_ex.get("goal"),
-                    "notes": old_ex.get("notes"),
-                    "tags": old_ex.get("tags", []),
-                    "links": old_ex.get("links", []),
-                    "image_paths": old_ex.get("image_paths", []),
-                    # RESET RPG STATS
+                    
+                    # Kopiujemy cel (np. 3x10), bo jest to część "planu"
+                    "goal": old_ex.get("goal"), 
+                    
+                    # --- POPRAWKA: Czyszczenie danych prywatnych ---
+                    "notes": None,        # Było: old_ex.get("notes")
+                    "tags": [],           # Było: old_ex.get("tags", [])
+                    "links": [],          # Było: old_ex.get("links", [])
+                    "image_paths": [],    # Było: old_ex.get("image_paths", [])
+                    # -----------------------------------------------
+                    
+                    # RESET RPG STATS pozostaje bez zmian
                     "mastery_level": 1,
                     "stats": {
                         "mastery": {"level": 1, "xp": 0},

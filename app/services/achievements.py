@@ -18,7 +18,7 @@ def evaluate_user_achievements(user_doc, new_level, new_stats):
 
     # 2. Dynamic LoL Rank Stat Checks
     # Fetch all achievements that have a "stat_requirement" field
-    stat_achievements = achievement_repo.get_achievements_with_stat_requirements()
+    stat_achievements = achievement_repo.get_stat_achievements()
     
     for ach in stat_achievements:
         req = ach["stat_requirement"]

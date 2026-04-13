@@ -121,13 +121,23 @@ def _process_user(user, user_id_str, duration_sec, user_stat_gains):
     update_doc = {
         "$set": {
             "level": new_u_lvl, 
-            "total_xp": new_u_xp,
-            "stats": current_user_stats,
             "highest_streak": new_highest_streak
+        },
+        "$inc": {
+            "total_xp": user_xp_gained,
+            "stats.strength": user_stat_gains.get("strength", 0),
+            "stats.stamina": user_stat_gains.get("stamina", 0),
+            "stats.dexterity": user_stat_gains.get("dexterity", 0),
+            "stats.endurance": user_stat_gains.get("endurance", 0),
+            "stats.consistency": user_stat_gains.get("consistency", 0)
         }
     }
+    
     if new_achievement_ids:
-        update_doc["$push"] = {"achievements": {"$each": new_achievement_ids}}
+        # Używamy $addToSet, aby uniknąć duplikatów osiągnięć
+        update_doc["$addToSet"] = {"achievements": {"$each": new_achievement_ids}}
+        
+    user_repo.update_user_advanced(user_id_str, update_doc)
         
     user_repo.update_user_advanced(user_id_str, update_doc)
 

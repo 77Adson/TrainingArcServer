@@ -17,7 +17,7 @@ def get_dashboard():
             return jsonify({'error': 'User not found'}), 404
 
         schedule, target_days = build_weekly_schedule(user_id)
-        stats = calculate_streak_and_progress(user_id, target_days)
+        stats = calculate_streak_and_progress(user_id, target_days, schedule)
         recent_achievements = get_recent_achievements(user)
 
         today_name = datetime.datetime.now(datetime.timezone.utc).strftime("%A")

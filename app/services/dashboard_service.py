@@ -23,28 +23,54 @@ def build_weekly_schedule(user_id_str):
     unique_scheduled_days = sum(1 for day, w in schedule.items() if w is not None)
     return schedule, unique_scheduled_days
 
-def calculate_streak_and_progress(user_id_str, target_days):
+def calculate_streak_and_progress(user_id_str, target_days, schedule):
     today = datetime.datetime.now(datetime.timezone.utc).date()
     start_of_week = today - datetime.timedelta(days=today.weekday())
 
     logs = log_repo.get_user_log_dates(user_id_str)
-    workout_dates = sorted(list(set([log["date"].date() for log in logs if "date" in log])), reverse=True)
+    workout_dates = set([log["date"].date() for log in logs if "date" in log])
 
+    # --- NOWA LOGIKA STREAKA (Adherence Streak) ---
+    days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     streak = 0
     check_date = today
-    
-    if workout_dates and (workout_dates[0] == today or workout_dates[0] == today - datetime.timedelta(days=1)):
-        idx = 0
-        if workout_dates[0] == today - datetime.timedelta(days=1):
-            check_date = today - datetime.timedelta(days=1)
-            
-        while idx < len(workout_dates) and workout_dates[idx] == check_date:
+
+    # 1. Sprawdzamy stan na dzisiaj
+    today_name = days_order[today.weekday()]
+    if schedule.get(today_name) is not None:
+        if today in workout_dates:
             streak += 1
             check_date -= datetime.timedelta(days=1)
-            idx += 1
+        else:
+            # Trening zaplanowany, ale jeszcze niezrobiony. 
+            # Nie łamiemy streaka (dzień się nie skończył), cofamy się do wczoraj.
+            check_date -= datetime.timedelta(days=1)
+    else:
+        # Dziś jest dzień wolny (lub bonusowy trening). Tak czy siak - trzymasz się planu!
+        streak += 1
+        check_date -= datetime.timedelta(days=1)
+
+    # 2. Cofamy się w przeszłość aż do pierwszego w historii treningu
+    if workout_dates:
+        earliest_log = min(workout_dates)
+        while check_date >= earliest_log:
+            day_name = days_order[check_date.weekday()]
+            is_scheduled = schedule.get(day_name) is not None
+            is_logged = check_date in workout_dates
+
+            if is_scheduled:
+                if is_logged:
+                    streak += 1
+                else:
+                    break # Przegapiono zaplanowany trening -> Koniec streaka!
+            else:
+                # Dzień wolny zawsze podtrzymuje streak
+                streak += 1
+            
+            check_date -= datetime.timedelta(days=1)
 
     workouts_this_week = sum(1 for d in workout_dates if d >= start_of_week)
-    worked_out_today = bool(workout_dates and workout_dates[0] == today)
+    worked_out_today = today in workout_dates
 
     return {
         "streak": streak,

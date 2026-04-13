@@ -1,7 +1,9 @@
 import datetime
 from app.repositories import user_repo, log_repo, exercise_repo
+from app.services.dashboard_service import build_weekly_schedule
 from . import rpg_math
 from . import achievements
+
 
 def calculate_rpg_gains(user_id_str, session_id, duration_sec):
     """
@@ -153,21 +155,44 @@ def _process_user(user, user_id_str, duration_sec, user_stat_gains):
 def _evaluate_user_streak(user_id_str, current_highest_streak):
     today = datetime.datetime.now(datetime.timezone.utc).date()
     all_logs = log_repo.get_user_log_dates(user_id_str)
-    workout_dates = sorted(list(set([log["date"].date() for log in all_logs if "date" in log])), reverse=True)
-
+    workout_dates = set([log["date"].date() for log in all_logs if "date" in log])
+    
+    # Pobieramy harmonogram gracza do oceny konsekwencji
+    schedule, _ = build_weekly_schedule(user_id_str)
+    days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    
     streak = 0
     check_date = today
-    
-    if workout_dates and (workout_dates[0] == today or workout_dates[0] == today - datetime.timedelta(days=1)):
-        idx = 0
-        if workout_dates[0] == today - datetime.timedelta(days=1):
-            check_date = today - datetime.timedelta(days=1)
-            
-        while idx < len(workout_dates) and workout_dates[idx] == check_date:
+
+    today_name = days_order[today.weekday()]
+    if schedule.get(today_name) is not None:
+        if today in workout_dates:
             streak += 1
             check_date -= datetime.timedelta(days=1)
-            idx += 1
+        else:
+            check_date -= datetime.timedelta(days=1)
+    else:
+        streak += 1
+        check_date -= datetime.timedelta(days=1)
 
+    if workout_dates:
+        earliest_log = min(workout_dates)
+        while check_date >= earliest_log:
+            day_name = days_order[check_date.weekday()]
+            is_scheduled = schedule.get(day_name) is not None
+            is_logged = check_date in workout_dates
+
+            if is_scheduled:
+                if is_logged:
+                    streak += 1
+                else:
+                    break # Przegapiono trening
+            else:
+                streak += 1
+            
+            check_date -= datetime.timedelta(days=1)
+
+    # Im dłuższy streak konsekwencji, tym więcej bonusowego XP do atrybutu Consistency
     consistency_gained = 1 + (streak // 3)
     new_highest_streak = max(current_highest_streak, streak)
     

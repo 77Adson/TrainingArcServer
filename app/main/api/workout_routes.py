@@ -19,22 +19,21 @@ def get_user_workouts():
     Calculates exercise counts server-side to save frontend processing.
     """
     user_id = get_jwt_identity()
-    # Only fetch necessary fields for the list view to reduce DB load
     workouts = workout_repo.get_workouts_by_user(
         user_id, 
-        projection={"name": 1, "days_of_week": 1, "exercise_groups": 1}
+        projection={"name": 1, "days_of_week": 1, "exercise_groups": 1, "average_time_sec": 1}
     )
     
     output = []
     for w in workouts:
-        # Calculate total exercises from nested groups
         total_exercises = sum([len(g.get("exercise_ids", [])) for g in w.get("exercise_groups", [])])
         
         output.append({
             "_id": str(w["_id"]),
             "name": w.get("name", "Unnamed Plan"),
             "days_of_week": w.get("days_of_week", {}),
-            "total_exercises": total_exercises
+            "total_exercises": total_exercises,
+            "average_time_sec": w.get("average_time_sec", 0)
         })
     return jsonify(output), 200
 

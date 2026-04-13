@@ -113,13 +113,15 @@ def get_friend_workouts(friend_id):
     if not friendship:
         return jsonify({"message": "Unauthorized"}), 403
 
-    # Fetch blueprints (sanitized for list view)
     workouts = workout_repo.get_workouts_by_user(friend_id)
     output = []
     for w in workouts:
+        total_exercises = sum([len(g.get("exercise_ids", [])) for g in w.get("exercise_groups", [])])
+        
         output.append({
             "_id": str(w["_id"]),
             "name": w.get("name", "Unnamed Plan"),
-            "average_time_sec": w.get("average_time_sec", 0) # FIXED JSON KEY
+            "total_exercises": total_exercises,
+            "average_time_sec": w.get("average_time_sec", 0)
         })
     return jsonify(output), 200

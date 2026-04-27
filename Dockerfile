@@ -1,5 +1,4 @@
-# Use the official Python image.
-# hadolint ignore=DL3006
+# Use an official Python runtime as a parent image
 FROM python:3.12.11-slim
 
 # Set the working directory in the container.

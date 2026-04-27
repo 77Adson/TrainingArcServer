@@ -4,7 +4,7 @@ import uuid
 import random
 
 # --- CONFIGURATION ---
-BASE_URL = "http://192.168.0.108:5000"  # Change to your server IP if not local
+BASE_URL = "http://192.168.0.108:5000"
 EMAIL = "userAuto@test.com"
 PASSWORD = "123"
 DAYS_TO_SIMULATE = 365

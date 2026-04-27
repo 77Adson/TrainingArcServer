@@ -8,7 +8,7 @@ class Config:
     MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/trainingarc") 
     
     # 2. JWT: Check.
-    # Używamy domyślnego klucza dla testów i trybu deweloperskiego
+    # Wartość domyślna jest ustawiona na "dev-secret"
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-secret-key")
         
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=7)
